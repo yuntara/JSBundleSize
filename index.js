@@ -103,7 +103,7 @@ async function run() {
     let result = "Bundled size for the package is listed below: \n \n";
     const after = get_files();
 
-    await exec.exec(`git checkout ${head_ref}`);
+    await exec.exec(`git checkout ${base_ref}`);
 
     console.log(`bootstrap base`);
     await exec.exec(bootstrap);
@@ -112,7 +112,7 @@ async function run() {
     await exec.exec(build_command);
 
     const before = get_files();
-    await exec.exec(`git checkout ${base_ref}`);
+    await exec.exec(`git checkout ${head_ref}`);
     const keys = Array.from(
       new Set([...Object.keys(before), ...Object.keys(after)])
     ).sort();
