@@ -78,7 +78,11 @@ async function run() {
 
     const get_files = () => {
       let list = {};
-      let total = 0;
+      let total = {
+        token: "total size",
+        path: "./",
+        size: 0,
+      };
       const files = listFiles(dist_path);
       files.forEach((file) => {
         if (compare_reg.test(file.path)) {
@@ -89,9 +93,9 @@ async function run() {
               path: file.path,
               size: file.size,
             };
-            total += file.size;
+            total.size += file.size;
           } else {
-            console.wran("cannot get token of item:", file.path);
+            console.warn("cannot get token of item:", file.path);
           }
         } else {
           console.log("ignored item: ", file.path);
