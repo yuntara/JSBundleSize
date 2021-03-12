@@ -1485,7 +1485,13 @@ async function run() {
     const after = get_files();
 
     await exec.exec(`git checkout ${head_ref}`);
+
+    console.log(`bootstrap base`);
+    await exec.exec(bootstrap);
+
+    console.log(`build base`);
     await exec.exec(build_command);
+
     const before = get_files();
     await exec.exec(`git checkout ${base_ref}`);
     const keys = Array.from(
