@@ -22,6 +22,14 @@ inputs:
     description: "github token"
     required: true
     default: ""
+  base:
+    description: "base ref"
+    required: true
+    default: ""
+  head:
+    description: "head ref"
+    required: true
+    default: ""
 runs:
   using: "node12"
   main: "dist/index.js"

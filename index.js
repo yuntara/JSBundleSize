@@ -20,7 +20,10 @@ async function run() {
     const bootstrap = core.getInput("bootstrap"),
       build_command = core.getInput("build_command"),
       dist_path = core.getInput("dist_path").replace(/\/$/, ""),
-      compare_reg = new RegExp(core.getInput("compare"));
+      compare_reg = new RegExp(core.getInput("compare")),
+      const base_ref = core.getInput("base"),
+      const head_ref = core.getInput("head"),
+      ;
     const get_name_token = (item_name) => {
       const matches = item_name.match(compare_reg);
       if (matches) {
@@ -101,12 +104,10 @@ async function run() {
     let result = "Bundled size for the package is listed below: \n \n";
     const after = get_files();
 
-    let target_ref = pull_request.base.ref;
-    let pr_ref = pull_request.head.ref;
-    await exec.exec(`git checkout ${target_ref}`);
+    await exec.exec(`git checkout ${head_ref}`);
     await exec.exec(build_command);
     const before = get_files();
-    await exec.exec(`git checkout ${pr_ref}`);
+    await exec.exec(`git checkout ${base_ref}`);
     const keys = Array.from(
       new Set([...Object.keys(before), ...Object.keys(after)])
     ).sort();
