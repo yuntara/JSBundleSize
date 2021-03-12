@@ -1450,6 +1450,7 @@ async function run() {
           after[token] = {
             token,
             name: i[2],
+            size: parseInt(i[0]) * 1000,
           };
           result += `**${i[2]}**: ${bytesToSize(parseInt(i[0]) * 1000)} \n`;
         } else {
@@ -1459,7 +1460,7 @@ async function run() {
         console.log("ignored item: ", i[2]);
       }
     });
-
+    result += "\n" + JSON.stringify(after, undefined, "  ");
     if (pull_request) {
       console.log(pull_request);
       // on pull request commit push add comment to pull request
