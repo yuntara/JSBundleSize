@@ -75,8 +75,10 @@ async function run() {
         return [dir];
       }
     };
+
     const get_files = () => {
       let list = {};
+      let total = 0;
       const files = listFiles(dist_path);
       files.forEach((file) => {
         if (compare_reg.test(file.path)) {
@@ -87,6 +89,7 @@ async function run() {
               path: file.path,
               size: file.size,
             };
+            total += file.size;
           } else {
             console.wran("cannot get token of item:", file.path);
           }
@@ -94,6 +97,7 @@ async function run() {
           console.log("ignored item: ", file.path);
         }
       });
+      list["total size"] = total;
       return list;
     };
 
@@ -104,8 +108,8 @@ async function run() {
 <details>
 <summary>Bundle size comparison table</summary>
 
-|key|before|after|
-|:----:|:----:|:---:|
+|key|before|after|size dif|
+|:----:|:----:|:---:|:---:|
 `;
     const after = get_files();
 
@@ -121,13 +125,26 @@ async function run() {
     await exec.exec(`git checkout ${head_ref}`);
     const keys = Array.from(
       new Set([...Object.keys(before), ...Object.keys(after)])
-    ).sort();
+    ).sort((a, b) => {
+      if (a === "total size") {
+        return 1;
+      }
+      if (b === "total size") {
+        return -1;
+      }
+      return a.localeCompare(b);
+    });
     for (const key of keys) {
       let b = before[key];
       let a = after[key];
+      let after_size = a?.size || 0;
+      let before_size = b?.size || 0;
+      let diff = after_size - before_size;
       result += `|${key}|${b ? `${bytesToSize(b.size)}` : "none"}|${
         a ? `${bytesToSize(a.size)}` : "none"
-      }|
+      }|${
+        after_size > before_size ? "🔴" : after_size < before_size ? "🟢" : "⚪"
+      } ${diff > 0 ? "+" : diff < 0 ? "-" : ""}${bytesToSize(Math.abs(diff))}|
 `;
     }
     result += `</details>`;
