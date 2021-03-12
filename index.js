@@ -21,9 +21,8 @@ async function run() {
       build_command = core.getInput("build_command"),
       dist_path = core.getInput("dist_path").replace(/\/$/, ""),
       compare_reg = new RegExp(core.getInput("compare")),
-      const base_ref = core.getInput("base"),
-      const head_ref = core.getInput("head"),
-      ;
+      base_ref = core.getInput("base"),
+      head_ref = core.getInput("head");
     const get_name_token = (item_name) => {
       const matches = item_name.match(compare_reg);
       if (matches) {
@@ -85,7 +84,7 @@ async function run() {
           if (token) {
             list[token] = {
               token,
-              name: file.path,
+              path: file.path,
               size: file.size,
             };
           } else {
@@ -116,7 +115,8 @@ async function run() {
       let a = after[key];
       result += `${b ? `${b.path} (${bytesToSize(b.size)})` : "none"}   ->   ${
         a ? `${a.path} (${bytesToSize(a.size)})` : "none"
-      }`;
+      }
+`;
     }
     if (pull_request) {
       // on pull request commit push add comment to pull request
