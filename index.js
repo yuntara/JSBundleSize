@@ -117,7 +117,6 @@ async function run() {
       }`;
     }
     if (pull_request) {
-      console.log(pull_request);
       // on pull request commit push add comment to pull request
       octokit.issues.createComment(
         Object.assign(Object.assign({}, context.repo), {

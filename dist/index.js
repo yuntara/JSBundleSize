@@ -1400,7 +1400,7 @@ async function run() {
     // --------------- Build repo  ---------------
     const bootstrap = core.getInput("bootstrap"),
       build_command = core.getInput("build_command"),
-      dist_path = core.getInput("dist_path"),
+      dist_path = core.getInput("dist_path").replace(/\/$/, ""),
       compare_reg = new RegExp(core.getInput("compare"));
     const get_name_token = (item_name) => {
       const matches = item_name.match(compare_reg);
@@ -1454,35 +1454,50 @@ async function run() {
         return [dir];
       }
     };
-
-    const files = listFiles(dist_path.replace(/\/$/, ""));
+    const get_files = () => {
+      let list = {};
+      const files = listFiles(dist_path);
+      files.forEach((file) => {
+        if (compare_reg.test(file.path)) {
+          const token = get_name_token(file.path);
+          if (token) {
+            list[token] = {
+              token,
+              name: file.path,
+              size: file.size,
+            };
+          } else {
+            console.wran("cannot get token of item:", file.path);
+          }
+        } else {
+          console.log("ignored item: ", file.path);
+        }
+      });
+      return list;
+    };
 
     const context = github.context,
       pull_request = context.payload.pull_request;
 
     let result = "Bundled size for the package is listed below: \n \n";
-    let before = {};
-    let after = {};
-    files.forEach((file) => {
-      if (compare_reg.test(file.path)) {
-        const token = get_name_token(file.path);
-        if (token) {
-          after[token] = {
-            token,
-            name: file.path,
-            size: file.size,
-          };
-          result += `**${file.name}**: ${bytesToSize(file.size)} \n`;
-        } else {
-          console.wran("cannot get token of item:", file.path);
-        }
-      } else {
-        console.log("ignored item: ", file.path);
-      }
-    });
-    result += "\n" + JSON.stringify(after, undefined, "  ");
+    const after = get_files();
+
+    let target_ref = pull_request.base.ref;
+    let pr_ref = pull_request.head.ref;
+    await exec.exec(`git checkout ${target_ref}`);
+    const before = get_files();
+    await exec.exec(`git checkout ${pr_ref}`);
+    const keys = Array.from(
+      new Set([...Object.keys(before), ...Object.keys(after)])
+    ).sort();
+    for (const key of keys) {
+      let b = before[key];
+      let a = after[key];
+      result += `${b ? `${b.path} (${bytesToSize(b.size)})` : "none"}   ->   ${
+        a ? `${a.path} (${bytesToSize(a.size)})` : "none"
+      }`;
+    }
     if (pull_request) {
-      console.log(pull_request);
       // on pull request commit push add comment to pull request
       octokit.issues.createComment(
         Object.assign(Object.assign({}, context.repo), {
@@ -1490,7 +1505,7 @@ async function run() {
           body: result,
         })
       );
-    } else {
+    } /* else {
       // on commit push add comment to commit
       octokit.repos.createCommitComment(
         Object.assign(Object.assign({}, context.repo), {
@@ -1498,7 +1513,7 @@ async function run() {
           body: result,
         })
       );
-    }
+    }*/
 
     // --------------- End Comment repo size  ---------------
   } catch (error) {
