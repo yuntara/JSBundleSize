@@ -137,8 +137,8 @@ async function run() {
     for (const key of keys) {
       let b = before[key];
       let a = after[key];
-      let after_size = a?.size || 0;
-      let before_size = b?.size || 0;
+      let after_size = a ? a.size : 0;
+      let before_size = b ? b.size : 0;
       let diff = after_size - before_size;
       result += `|${key}|${b ? `${bytesToSize(b.size)}` : "none"}|${
         a ? `${bytesToSize(a.size)}` : "none"
