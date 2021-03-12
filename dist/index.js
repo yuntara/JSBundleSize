@@ -1484,7 +1484,7 @@ async function run() {
 
     let target_ref = pull_request.base.ref;
     let pr_ref = pull_request.head.ref;
-    await exec.exec(`git checkout origin ${target_ref}`);
+    await exec.exec(`git checkout ${target_ref}`);
     await exec.exec(build_command);
     const before = get_files();
     await exec.exec(`git checkout ${pr_ref}`);
