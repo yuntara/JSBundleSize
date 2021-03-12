@@ -1403,8 +1403,9 @@ async function run() {
       dist_path = core.getInput("dist_path"),
       compare_reg = new RegExp(core.getInput("compare"));
     const get_name_token = (item_name) => {
-      if (item_name.match(compare_reg)) {
-        const tokens = compare_reg.slice(1);
+      const matches = item_name.match(compare_reg);
+      if (matches) {
+        const tokens = matches.slice(1);
         if (tokens.length > 0) {
           return tokens.join("_");
         }
