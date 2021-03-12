@@ -100,7 +100,13 @@ async function run() {
     const context = github.context,
       pull_request = context.payload.pull_request;
 
-    let result = "Bundled size for the package is listed below: \n \n";
+    let result = `Bundled size for the package is listed below:
+<details>
+<summary>Bundle size comparison table</summary>
+
+|key|before|after|
+|:----:|:----:|:---:|
+`;
     const after = get_files();
 
     await exec.exec(`git checkout ${base_ref}`);
@@ -119,11 +125,12 @@ async function run() {
     for (const key of keys) {
       let b = before[key];
       let a = after[key];
-      result += `${b ? `${b.path} (${bytesToSize(b.size)})` : "none"}   ->   ${
-        a ? `${a.path} (${bytesToSize(a.size)})` : "none"
-      }
+      result += `|${key}|${b ? `${bytesToSize(b.size)}` : "none"}|${
+        a ? `${bytesToSize(a.size)}` : "none"
+      }|
 `;
     }
+    result += `</details>`;
     if (pull_request) {
       // on pull request commit push add comment to pull request
       octokit.issues.createComment(
