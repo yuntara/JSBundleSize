@@ -17,7 +17,11 @@ inputs:
   compare:
     description: "regex for filename to compare"
     required: true
-    default: "dist"
+    default: '(\w+)\.js$'
+  token:
+    description: "github token"
+    required: true
+    default: ""
 runs:
   using: "node12"
   main: "dist/index.js"

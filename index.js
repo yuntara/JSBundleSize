@@ -1,7 +1,7 @@
 const core = require("@actions/core");
 const exec = require("@actions/exec");
 const github = require("@actions/github");
-
+const fs = require("fs");
 async function run() {
   function bytesToSize(bytes) {
     const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
@@ -52,31 +52,50 @@ async function run() {
         sizeCalOutput += data.toString();
       },
     };
-    await exec.exec(`du ${dist_path}`, null, outputOptions);
-    core.setOutput("size", sizeCalOutput);
+    const listFiles = (dir) => {
+      try {
+        return fs
+          .readdirSync(dir, { withFileTypes: true })
+          .flatMap((dirent) => {
+            const path = `${dir}/${dirent.name}`;
+            const stats = fs.statSync(path);
+            return dirent.isFile()
+              ? [
+                  {
+                    path,
+                    size: stats.size,
+                  },
+                ]
+              : listFiles(path);
+          });
+      } catch (e) {
+        return [dir];
+      }
+    };
+
+    const files = listFiles(dist_path.replace(/\/$/, ""));
+
     const context = github.context,
       pull_request = context.payload.pull_request;
 
-    const arrayOutput = sizeCalOutput.split("\n");
     let result = "Bundled size for the package is listed below: \n \n";
     let before = {};
     let after = {};
-    arrayOutput.forEach((item) => {
-      const i = item.split(/(\s+)/);
-      if (item && compare_reg.test(item)) {
-        const token = get_name_token(i[2]);
+    files.forEach((file) => {
+      if (compare_reg.test(file.path)) {
+        const token = get_name_token(file.path);
         if (token) {
           after[token] = {
             token,
-            name: i[2],
-            size: parseInt(i[0]) * 1000,
+            name: file.path,
+            size: file.size,
           };
-          result += `**${i[2]}**: ${bytesToSize(parseInt(i[0]) * 1000)} \n`;
+          result += `**${file.name}**: ${bytesToSize(file.size)} \n`;
         } else {
-          console.wran("cannot get token of item:", item);
+          console.wran("cannot get token of item:", file.path);
         }
       } else {
-        console.log("ignored item: ", i[2]);
+        console.log("ignored item: ", file.path);
       }
     });
     result += "\n" + JSON.stringify(after, undefined, "  ");
