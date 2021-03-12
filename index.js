@@ -19,8 +19,17 @@ async function run() {
     // --------------- Build repo  ---------------
     const bootstrap = core.getInput("bootstrap"),
       build_command = core.getInput("build_command"),
-      dist_path = core.getInput("dist_path");
-
+      dist_path = core.getInput("dist_path"),
+      compare_reg = new RegExp(core.getInput("compare"));
+    const get_name_token = (item_name) => {
+      if (item_name.match(compare_reg)) {
+        const tokens = compare_reg.slice(1);
+        if (tokens.length > 0) {
+          return tokens.join("_");
+        }
+      }
+      return null;
+    };
     console.log(`Bootstrapping repo`);
     await exec.exec(bootstrap);
 
@@ -36,12 +45,12 @@ async function run() {
     let sizeCalOutput = "";
 
     outputOptions.listeners = {
-      stdout: data => {
+      stdout: (data) => {
         sizeCalOutput += data.toString();
       },
-      stderr: data => {
+      stderr: (data) => {
         sizeCalOutput += data.toString();
-      }
+      },
     };
     await exec.exec(`du ${dist_path}`, null, outputOptions);
     core.setOutput("size", sizeCalOutput);
@@ -50,19 +59,34 @@ async function run() {
 
     const arrayOutput = sizeCalOutput.split("\n");
     let result = "Bundled size for the package is listed below: \n \n";
-    arrayOutput.forEach(item => {
+    let before = {};
+    let after = {};
+    arrayOutput.forEach((item) => {
       const i = item.split(/(\s+)/);
-      if (item) {
-        result += `**${i[2]}**: ${bytesToSize(parseInt(i[0]) * 1000)} \n`;
+      if (item && compare_reg.test(item)) {
+        const token = get_name_token(i[2]);
+        if (token) {
+          after[token] = {
+            token,
+            name: i[2],
+            size: parseInt(i[0]) * 1000,
+          };
+          result += `**${i[2]}**: ${bytesToSize(parseInt(i[0]) * 1000)} \n`;
+        } else {
+          console.wran("cannot get token of item:", item);
+        }
+      } else {
+        console.log("ignored item: ", i[2]);
       }
     });
-
+    result += "\n" + JSON.stringify(after, undefined, "  ");
     if (pull_request) {
+      console.log(pull_request);
       // on pull request commit push add comment to pull request
       octokit.issues.createComment(
         Object.assign(Object.assign({}, context.repo), {
           issue_number: pull_request.number,
-          body: result
+          body: result,
         })
       );
     } else {
@@ -70,7 +94,7 @@ async function run() {
       octokit.repos.createCommitComment(
         Object.assign(Object.assign({}, context.repo), {
           commit_sha: github.context.sha,
-          body: result
+          body: result,
         })
       );
     }
