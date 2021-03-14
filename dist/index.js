@@ -1461,7 +1461,7 @@ async function run() {
       let list = {};
       let total = {
         token: "total size",
-        path: "./",
+        path: null,
         size: 0,
       };
       const files = listFiles(dist_path);
@@ -1505,8 +1505,13 @@ async function run() {
 
     console.log(`build base`);
     await exec.exec(build_command);
-
+    for (const file of Object.values(before)) {
+      if (file.path) {
+        fs.unlinkSync(file.path);
+      }
+    }
     const before = get_files();
+
     await exec.exec(`git checkout ${head_ref}`);
     const keys = Array.from(
       new Set([...Object.keys(before), ...Object.keys(after)])
