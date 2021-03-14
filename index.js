@@ -116,6 +116,15 @@ async function run() {
 |:----:|:----:|:---:|:---:|
 `;
     const after = get_files();
+    console.log("after sizes");
+    for (const [key, file] of Object.entries(after)) {
+      console.log(`${key} ${file.path} ${file.size}`);
+    }
+    for (const file of Object.values(after)) {
+      if (file.path) {
+        fs.unlinkSync(file.path);
+      }
+    }
 
     await exec.exec(`git checkout ${base_ref}`);
 
@@ -123,14 +132,14 @@ async function run() {
     await exec.exec(bootstrap);
 
     console.log(`build base`);
-    await exec.exec(build_command);
-    for (const file of Object.values(after)) {
-      if (file.path) {
-        fs.unlinkSync(file.path);
-      }
-    }
-    const before = get_files();
 
+    await exec.exec(build_command);
+
+    const before = get_files();
+    console.log("before sizes");
+    for (const [key, file] of Object.entries(before)) {
+      console.log(`${key} ${file.path} ${file.size}`);
+    }
     await exec.exec(`git checkout ${head_ref}`);
     const keys = Array.from(
       new Set([...Object.keys(before), ...Object.keys(after)])
