@@ -124,7 +124,7 @@ async function run() {
 
     console.log(`build base`);
     await exec.exec(build_command);
-    for (const file of Object.values(before)) {
+    for (const file of Object.values(after)) {
       if (file.path) {
         fs.unlinkSync(file.path);
       }
