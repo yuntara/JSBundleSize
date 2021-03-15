@@ -1493,8 +1493,8 @@ async function run() {
 <details>
 <summary>Bundle size comparison table</summary>
 
-|key|before|after|size diff|
-|:----:|:----:|:---:|:---:|
+|key|before|after||size diff|
+|:----:|:----:|:---:|:---:|:---:|
 `;
     const after = get_files();
     console.log("after sizes");
@@ -1543,7 +1543,7 @@ async function run() {
         a ? `${bytesToSize(a.size)}` : "none"
       }|${
         after_size > before_size ? "🔴" : after_size < before_size ? "🟢" : "⚪"
-      }  ${diff > 0 ? "+" : diff < 0 ? "-" : ""}${bytesToSize(Math.abs(diff))}|
+      }|${diff > 0 ? "+" : diff < 0 ? "-" : ""}${bytesToSize(Math.abs(diff))}|
 `;
     }
     result += `</details>`;
