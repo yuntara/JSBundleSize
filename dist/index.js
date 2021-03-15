@@ -1382,7 +1382,7 @@ module.exports = require("os");
 const core = __webpack_require__(470);
 const exec = __webpack_require__(986);
 const github = __webpack_require__(469);
-const zlib = __webpack_require__(889);
+const zlib = __webpack_require__(761);
 const fs = __webpack_require__(747);
 const { promisify } = __webpack_require__(669);
 const pipe = promisify(pipeline);
@@ -1475,7 +1475,7 @@ async function run() {
       fs.unlinkSync(tmpname);
       return stats.size;
     };
-    const get_files = () => {
+    const get_files = async () => {
       let list = {};
       let total = {
         token: "total size",
@@ -1483,11 +1483,11 @@ async function run() {
         size: 0,
       };
       const files = listFiles(dist_path);
-      files.forEach((file) => {
+      for (const file of files) {
         if (compare_reg.test(file.path)) {
           const token = get_name_token(file.path);
           if (token) {
-            const compress_size = get_compress_size(file.path);
+            const compress_size = await get_compress_size(file.path);
             list[token] = {
               token,
               path: file.path,
@@ -1501,7 +1501,7 @@ async function run() {
         } else {
           console.log("ignored item: ", file.path);
         }
-      });
+      }
       list["total size"] = total;
       return list;
     };
@@ -1509,7 +1509,7 @@ async function run() {
     const context = github.context,
       pull_request = context.payload.pull_request;
 
-    const after = get_files();
+    const after = await get_files();
     console.log("after sizes");
     for (const [key, file] of Object.entries(after)) {
       console.log(`${key} ${file.path} ${file.size} ${file.compress_size}`);
@@ -1529,7 +1529,7 @@ async function run() {
 
     await exec.exec(build_command);
 
-    const before = get_files();
+    const before = await get_files();
     console.log("before sizes");
     for (const [key, file] of Object.entries(before)) {
       console.log(`${key} ${file.path} ${file.size} ${file.compress_size}`);
@@ -25837,14 +25837,6 @@ function set(object, path, value) {
 }
 
 module.exports = set;
-
-
-/***/ }),
-
-/***/ 889:
-/***/ (function() {
-
-eval("require")("zlip");
 
 
 /***/ }),

@@ -102,7 +102,7 @@ async function run() {
         size: 0,
       };
       const files = listFiles(dist_path);
-      files.forEach((file) => {
+      for (const file of files) {
         if (compare_reg.test(file.path)) {
           const token = get_name_token(file.path);
           if (token) {
@@ -120,7 +120,7 @@ async function run() {
         } else {
           console.log("ignored item: ", file.path);
         }
-      });
+      }
       list["total size"] = total;
       return list;
     };
