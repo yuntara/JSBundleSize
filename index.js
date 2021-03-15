@@ -172,8 +172,8 @@ async function run() {
       let after_size = a ? (compressed ? a.compress_size : a.size) : 0;
       let before_size = b ? (compressed ? b.compress_size : b.size) : 0;
       let diff = after_size - before_size;
-      return `|${key}|${b ? `${bytesToSize(b.size)}` : "none"}|${
-        a ? `${bytesToSize(a.size)}` : "none"
+      return `|${key}|${b ? `${bytesToSize(before_size)}` : "none"}|${
+        a ? `${bytesToSize(after_size)}` : "none"
       }|${
         after_size > before_size ? "🔴" : after_size < before_size ? "🟢" : "⚪"
       }|${diff > 0 ? "+" : diff < 0 ? "-" : ""}${bytesToSize(Math.abs(diff))}|
@@ -181,23 +181,23 @@ async function run() {
     };
     let result = `Bundled size for the package is listed below:
 
-    |key|before|after||size diff|
-    |:----:|:----:|:---:|:---:|:---:|
-    ${make_line("Total size", after["total_size"], before["total_size"])}${
+|key|before|after||size diff|
+|:----:|:----:|:---:|:---:|:---:|
+${make_line("Total size", after["total size"], before["total size"])}${
       do_compress
         ? `\n${make_line(
             "Total size (gzip)",
-            after["total_size"],
-            before["total_size"],
+            after["total size"],
+            before["total size"],
             true
           )}`
         : ""
     }
-    <details>
-    <summary>Each bundled size comparison table (raw) </summary>
+<details>
+<summary>Each bundled size comparison table (raw) </summary>
     
-    |key|before|after||size diff|
-    |:----:|:----:|:---:|:---:|:---:|
+|key|before|after||size diff|
+|:----:|:----:|:---:|:---:|:---:|
     `;
     for (const key of keys) {
       if (key === "total size") {
@@ -210,11 +210,11 @@ async function run() {
     result += `</details>`;
     if (do_compress) {
       result += `
-      <details>
-      <summary>Each bundled size comparison table (gzip) </summary>
+<details>
+<summary>Each bundled size comparison table (gzip) </summary>
       
-      |key|before|after||size diff|
-      |:----:|:----:|:---:|:---:|:---:|
+|key|before|after||size diff|
+|:----:|:----:|:---:|:---:|:---:|
       `;
       for (const key of keys) {
         if (key === "total size") {
