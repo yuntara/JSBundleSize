@@ -1,7 +1,11 @@
 const core = require("@actions/core");
 const exec = require("@actions/exec");
 const github = require("@actions/github");
+const zlib = require("zlip");
 const fs = require("fs");
+const { promisify } = require("util");
+const pipe = promisify(pipeline);
+
 async function run() {
   function bytesToSize(bytes) {
     const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
@@ -22,7 +26,9 @@ async function run() {
       dist_path = core.getInput("dist_path").replace(/\/$/, ""),
       compare_reg = new RegExp(core.getInput("compare")),
       base_ref = core.getInput("base"),
-      head_ref = core.getInput("head");
+      head_ref = core.getInput("head"),
+      compress_type = core.getInput("compress");
+    const do_compress = compress_type !== "none";
     const get_name_token = (item_name) => {
       const matches = item_name.match(compare_reg);
       if (matches) {
@@ -45,7 +51,6 @@ async function run() {
 
     // --------------- Comment repo size  ---------------
     const outputOptions = {};
-    let sizeCalOutput = "";
 
     outputOptions.listeners = {
       stdout: (data) => {
@@ -62,6 +67,7 @@ async function run() {
           .flatMap((dirent) => {
             const path = `${dir}/${dirent.name}`;
             const stats = fs.statSync(path);
+
             return dirent.isFile()
               ? [
                   {
@@ -75,7 +81,19 @@ async function run() {
         return [dir];
       }
     };
-
+    const get_compress_size = async (path) => {
+      if (!do_compress) {
+        return 0;
+      }
+      const tmpname = `${path}.gz`;
+      const gzip = zlib.createGzip();
+      const source = fs.createReadStream(path);
+      const destination = fs.createWriteStream(tmpname);
+      await pipe(source, gzip, destination);
+      const stats = fs.statSync(tmpname);
+      fs.unlinkSync(tmpname);
+      return stats.size;
+    };
     const get_files = () => {
       let list = {};
       let total = {
@@ -88,10 +106,12 @@ async function run() {
         if (compare_reg.test(file.path)) {
           const token = get_name_token(file.path);
           if (token) {
+            const compress_size = get_compress_size(file.path);
             list[token] = {
               token,
               path: file.path,
               size: file.size,
+              compress_size,
             };
             total.size += file.size;
           } else {
@@ -108,17 +128,10 @@ async function run() {
     const context = github.context,
       pull_request = context.payload.pull_request;
 
-    let result = `Bundled size for the package is listed below:
-<details>
-<summary>Bundle size comparison table</summary>
-
-|key|before|after||size diff|
-|:----:|:----:|:---:|:---:|:---:|
-`;
     const after = get_files();
     console.log("after sizes");
     for (const [key, file] of Object.entries(after)) {
-      console.log(`${key} ${file.path} ${file.size}`);
+      console.log(`${key} ${file.path} ${file.size} ${file.compress_size}`);
     }
     for (const file of Object.values(after)) {
       if (file.path) {
@@ -138,7 +151,7 @@ async function run() {
     const before = get_files();
     console.log("before sizes");
     for (const [key, file] of Object.entries(before)) {
-      console.log(`${key} ${file.path} ${file.size}`);
+      console.log(`${key} ${file.path} ${file.size} ${file.compress_size}`);
     }
     await exec.exec(`git checkout ${head_ref}`);
     const keys = Array.from(
@@ -152,20 +165,64 @@ async function run() {
       }
       return a.localeCompare(b);
     });
-    for (const key of keys) {
-      let b = before[key];
-      let a = after[key];
-      let after_size = a ? a.size : 0;
-      let before_size = b ? b.size : 0;
+    const make_line = (key, a, b, compressed) => {
+      let after_size = a ? (compressed ? a.compress_size : a.size) : 0;
+      let before_size = b ? (compressed ? b.compress_size : b.size) : 0;
       let diff = after_size - before_size;
-      result += `|${key}|${b ? `${bytesToSize(b.size)}` : "none"}|${
+      return `|${key}|${b ? `${bytesToSize(b.size)}` : "none"}|${
         a ? `${bytesToSize(a.size)}` : "none"
       }|${
         after_size > before_size ? "🔴" : after_size < before_size ? "🟢" : "⚪"
       }|${diff > 0 ? "+" : diff < 0 ? "-" : ""}${bytesToSize(Math.abs(diff))}|
 `;
+    };
+    let result = `Bundled size for the package is listed below:
+
+    |key|before|after||size diff|
+    |:----:|:----:|:---:|:---:|:---:|
+    ${make_line("Total size", after["total_size"], before["total_size"])}${
+      do_compress
+        ? `\n${make_line(
+            "Total size (gzip)",
+            after["total_size"],
+            before["total_size"],
+            true
+          )}`
+        : ""
+    }
+    <details>
+    <summary>Each bundled size comparison table (raw) </summary>
+    
+    |key|before|after||size diff|
+    |:----:|:----:|:---:|:---:|:---:|
+    `;
+    for (const key of keys) {
+      if (key === "total size") {
+        continue;
+      }
+      let b = before[key];
+      let a = after[key];
+      result += make_line(key, a, b);
     }
     result += `</details>`;
+    if (do_compress) {
+      result += `
+      <details>
+      <summary>Each bundled size comparison table (gzip) </summary>
+      
+      |key|before|after||size diff|
+      |:----:|:----:|:---:|:---:|:---:|
+      `;
+      for (const key of keys) {
+        if (key === "total size") {
+          continue;
+        }
+        let b = before[key];
+        let a = after[key];
+        result += make_line(key, a, b, true);
+      }
+      result += `</details>`;
+    }
     if (pull_request) {
       // on pull request commit push add comment to pull request
       octokit.issues.createComment(

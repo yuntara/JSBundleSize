@@ -30,6 +30,10 @@ inputs:
     description: "head ref"
     required: true
     default: ""
+  compress:
+    description: "compress type (gzip, none)"
+    required: false
+    default: none
 runs:
   using: "node12"
   main: "dist/index.js"
