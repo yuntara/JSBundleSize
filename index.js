@@ -1,7 +1,7 @@
 const core = require("@actions/core");
 const exec = require("@actions/exec");
 const github = require("@actions/github");
-const zlib = require("zlip");
+const zlib = require("zlib");
 const fs = require("fs");
 const { promisify } = require("util");
 const pipe = promisify(pipeline);
@@ -94,7 +94,7 @@ async function run() {
       fs.unlinkSync(tmpname);
       return stats.size;
     };
-    const get_files = () => {
+    const get_files = async () => {
       let list = {};
       let total = {
         token: "total size",
@@ -106,7 +106,7 @@ async function run() {
         if (compare_reg.test(file.path)) {
           const token = get_name_token(file.path);
           if (token) {
-            const compress_size = get_compress_size(file.path);
+            const compress_size = await get_compress_size(file.path);
             list[token] = {
               token,
               path: file.path,
@@ -128,7 +128,7 @@ async function run() {
     const context = github.context,
       pull_request = context.payload.pull_request;
 
-    const after = get_files();
+    const after = await get_files();
     console.log("after sizes");
     for (const [key, file] of Object.entries(after)) {
       console.log(`${key} ${file.path} ${file.size} ${file.compress_size}`);
@@ -148,7 +148,7 @@ async function run() {
 
     await exec.exec(build_command);
 
-    const before = get_files();
+    const before = await get_files();
     console.log("before sizes");
     for (const [key, file] of Object.entries(before)) {
       console.log(`${key} ${file.path} ${file.size} ${file.compress_size}`);
