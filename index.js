@@ -185,7 +185,7 @@ async function run() {
 |:----:|:----:|:---:|:---:|:---:|
 ${make_line("Total size", after["total size"], before["total size"])}${
       do_compress
-        ? `\n${make_line(
+        ? `${make_line(
             "Total size (gzip)",
             after["total size"],
             before["total size"],
@@ -198,7 +198,7 @@ ${make_line("Total size", after["total size"], before["total size"])}${
     
 |key|before|after||size diff|
 |:----:|:----:|:---:|:---:|:---:|
-    `;
+`;
     for (const key of keys) {
       if (key === "total size") {
         continue;
@@ -215,7 +215,7 @@ ${make_line("Total size", after["total size"], before["total size"])}${
       
 |key|before|after||size diff|
 |:----:|:----:|:---:|:---:|:---:|
-      `;
+`;
       for (const key of keys) {
         if (key === "total size") {
           continue;
