@@ -100,6 +100,7 @@ async function run() {
       let total = {
         token: "total size",
         path: null,
+        compress_size: 0,
         size: 0,
       };
       const files = listFiles(dist_path);
@@ -115,6 +116,7 @@ async function run() {
               compress_size,
             };
             total.size += file.size;
+            total.compress_size += compress_size;
           } else {
             console.warn("cannot get token of item:", file.path);
           }
