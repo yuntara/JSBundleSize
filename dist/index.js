@@ -1385,6 +1385,7 @@ const github = __webpack_require__(469);
 const zlib = __webpack_require__(761);
 const fs = __webpack_require__(747);
 const { promisify } = __webpack_require__(669);
+const { pipeline } = __webpack_require__(413);
 const pipe = promisify(pipeline);
 
 async function run() {
